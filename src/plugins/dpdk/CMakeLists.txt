@@ -16,6 +16,7 @@
 ##############################################################################
 find_path(DPDK_INCLUDE_DIR PATH_SUFFIXES dpdk NAMES rte_config.h)
 vpp_plugin_find_library(dpdk DPDK_LIB "libdpdk.a")
+message(WARNING "-- PKKKK build DPDK SO")
 
 if (NOT DPDK_INCLUDE_DIR)
   message(WARNING "-- DPDK headers not found - dpdk plugin disabled")
@@ -27,6 +28,8 @@ if (NOT DPDK_LIB)
   set(DPDK_IS_SHARED_LIB 1)
   message(WARNING "-- linking dpdk plugin against DPDK shared libs")
 endif()
+message(WARNING "-- XXXPKKKK build DPDK SO")
+#x
 
 ##############################################################################
 # Parse DPDK config and version header files

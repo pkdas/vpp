@@ -601,7 +601,14 @@ dpdk_subif_add_del_function (vnet_main_t * vnm,
 			       xd->port_id, r);
       goto done;
     }
-
+  vlan_offload = rte_eth_dev_get_vlan_offload (xd->port_id);
+  dpdk_log_notice ("PK: vlan_offload %x port %d", vlan_offload, xd->port_id); 
+  vlan_offload &= ~ETH_VLAN_STRIP_OFFLOAD;
+  if ((r = rte_eth_dev_set_vlan_offload (xd->port_id, vlan_offload))) {
+      err = clib_error_return (0, "rte_eth_dev_set_vlan_offload[%d]: err %d",
+			       xd->port_id, r);
+  }
+  
 done:
   if (xd->num_subifs)
     xd->flags |= DPDK_DEVICE_FLAG_HAVE_SUBIF;

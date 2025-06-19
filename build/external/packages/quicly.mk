@@ -40,6 +40,7 @@ endef
 
 define  quicly_install_cmds
 	@rm -f $(quicly_install_log)
+	echo $(MAKE) $(MAKE_ARGS) $(quicly_build_dir) $(picotls_build_dir)
 	@$(MAKE) $(MAKE_ARGS) -C $(quicly_build_dir) install >> $(quicly_install_log)
 	@$(MAKE) $(MAKE_ARGS) -C $(picotls_build_dir) install >> $(quicly_install_log)
 endef

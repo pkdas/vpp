@@ -74,14 +74,25 @@ $1-extract: $(B)/.$1.extract.ok
 ##############################################################################
 # Patch
 ##############################################################################
+GEMU = /tmp/new/dpdk/
 $(B)/.$1.patch.ok: $(B)/.$1.extract.ok
 	$$(call h1,"patching $1 $($1_version)")
-ifneq ($$(wildcard $$($1_patch_dir)/*.patch),)
-	@for f in $$($1_patch_dir)/*.patch ; do \
-		echo "Applying patch: $$$$(basename $$$$f)" ; \
-		patch -p1 -d $$($1_src_dir) < $$$$f ; \
-	done
-endif
+#ifneq ($$(wildcard $$($1_patch_dir)/*.patch),)
+#	@for f in $$($1_patch_dir)/*.patch ; do \
+#		echo "Applying patch: $$$$(basename $$$$f)" ; \
+#		patch -p1 -d $$($1_src_dir) < $$$$f ; \
+#	done
+#endif
+	@if [[ "$1" == "dpdk"* ]]; then \
+		echo "$1 $($1_version) patch with gem ethernet driver GEMU srcdir=$$(GEMU), dst_dir=$$($1_src_dir)" ; \
+		cp    $$(GEMU)/app/meson.build                 $$($1_src_dir)/app ; \
+		cp    $$(GEMU)/drivers/common/meson.build      $$($1_src_dir)/drivers/common ; \
+		cp    $$(GEMU)/drivers/bus/meson.build         $$($1_src_dir)/drivers/bus ; \
+		cp    $$(GEMU)/drivers/dma/meson.build         $$($1_src_dir)/drivers/dma ; \
+		cp    $$(GEMU)/drivers/mempool/meson.build     $$($1_src_dir)/drivers/mempool ; \
+		cp    $$(GEMU)/drivers/net/meson.build         $$($1_src_dir)/drivers/net ; \
+		cp -r $$(GEMU)/drivers/net/gemu                $$($1_src_dir)/drivers/net ; \
+	fi
 	@touch $$@
 
 .PHONY: $1-patch

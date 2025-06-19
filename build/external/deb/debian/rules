@@ -22,6 +22,9 @@ include /usr/share/dpkg/default.mk
 override_dh_clean:
 	make $(MAKE_ARGS) clean
 
+override_dh_strip:
+	dh_strip --exclude=librte
+
 override_dh_auto_configure:
 
 override_dh_install:

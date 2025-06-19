@@ -13,7 +13,7 @@
 
 DPDK_PKTMBUF_HEADROOM        ?= 128
 DPDK_USE_LIBBSD              ?= n
-DPDK_DEBUG                   ?= n
+DPDK_DEBUG                   ?= y
 DPDK_TAP_PMD                 ?= n
 DPDK_FAILSAFE_PMD            ?= n
 DPDK_MACHINE                 ?= default
@@ -33,18 +33,28 @@ dpdk_tarball_strip_dirs      := 1
 ifeq ($(shell uname), FreeBSD)
 dpdk_depends		     := $(if $(ARCH_X86_64), ipsec-mb)
 else
-dpdk_depends		     := rdma-core $(if $(ARCH_X86_64), ipsec-mb)
+dpdk_depends		     := $(if $(ARCH_X86_64), ipsec-mb)
+#dpdk_depends		     := rdma-core $(if $(ARCH_X86_64), ipsec-mb)
 endif
-ifeq ($(rdma-core_version),)
-$(error Missing rdma-core_version)
-endif
-DPDK_MLX_DEFAULT             := $(shell if grep -q "rdma=$(rdma-core_version) dpdk=$(dpdk_version)" mlx_rdma_dpdk_matrix.txt; then echo 'y'; else echo 'n'; fi)
+#------ PK FIXME DISABLE all RDMA
+#ifeq ($(rdma-core_version),)
+#$(error Missing rdma-core_version)
+#endif
+#DPDK_MLX_DEFAULT             := $(shell if grep -q "rdma=$(rdma-core_version) dpdk=$(dpdk_version)" mlx_rdma_dpdk_matrix.txt; then echo 'y'; else echo 'n'; fi)
+#DPDK_MLX4_PMD                ?= $(DPDK_MLX_DEFAULT)
+#DPDK_MLX5_PMD                ?= $(DPDK_MLX_DEFAULT)
+#DPDK_MLX5_COMMON_PMD         ?= $(DPDK_MLX_DEFAULT)
+#-----------------------
+# PK DISABLE NLX
+#-----------------------
+DPDK_MLX_DEFAULT             := n 
 DPDK_MLX4_PMD                ?= $(DPDK_MLX_DEFAULT)
 DPDK_MLX5_PMD                ?= $(DPDK_MLX_DEFAULT)
 DPDK_MLX5_COMMON_PMD         ?= $(DPDK_MLX_DEFAULT)
 # Debug or release
 
-DPDK_BUILD_TYPE:=release
+#DPDK_BUILD_TYPE:=release
+DPDK_BUILD_TYPE:=debug
 ifeq ($(DPDK_DEBUG), y)
 DPDK_BUILD_TYPE:=debug
 endif
@@ -212,9 +222,7 @@ define dpdk_config_cmds
 	$(call dpdk_config_def,USE_LIBBSD)
 endef
 
-ifeq ("$(DPDK_VERBOSE)","1")
 DPDK_VERBOSE_BUILD = --verbose
-endif
 
 define dpdk_build_cmds
 	cd $(dpdk_build_dir) && \

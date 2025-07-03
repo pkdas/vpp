@@ -166,6 +166,8 @@ ipsec_sa_add_del_command_fn (vlib_main_t * vm,
 	flags |= IPSEC_SA_FLAG_UDP_ENCAP;
       else if (unformat (line_input, "async"))
 	flags |= IPSEC_SA_FLAG_IS_ASYNC;
+      else if (unformat (line_input, "no-algo-no-drop"))
+	flags |= IPSEC_SA_FLAG_NO_ALGO_NO_DROP;
       else
 	{
 	  error = clib_error_return (0, "parse error: '%U'",

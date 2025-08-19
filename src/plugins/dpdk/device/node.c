@@ -30,6 +30,9 @@
 
 #include <dpdk/device/dpdk_priv.h>
 
+#include <vlib/unix/plugin.h>
+#include <assert.h>
+
 static char *dpdk_error_strings[] = {
 #define _(n,s) s,
   foreach_dpdk_error
@@ -339,6 +342,39 @@ dpdk_process_lro_offload (dpdk_device_t *xd, dpdk_per_thread_data_t *ptd,
     }
 }
 
+// PK FIXME
+static_always_inline void put_frame_to_esp_decrypt(vlib_main_t * vm, dpdk_main_t * dm, u32 *buf_indices, u32 buf_count) 
+{
+  vlib_frame_t *f;
+
+  f = vlib_get_frame_to_node(vm, dm->esp4_decrypt_node->index);
+  f->n_vectors = buf_count;
+
+  u32 *to_next = vlib_frame_vector_args(f);
+  for (int i=0; i < buf_count; i++)
+  {
+      to_next[i] = buf_indices[i];
+  }
+
+  vlib_put_frame_to_node(vm, dm->esp4_decrypt_node->index, f);
+}
+
+static_always_inline void put_frame_to_esp_encrypt(vlib_main_t * vm, dpdk_main_t * dm, u32 *buf_indices, u32 buf_count) 
+{
+  vlib_frame_t *f;
+
+  f = vlib_get_frame_to_node(vm, dm->esp4_encrypt_node->index);
+  f->n_vectors = buf_count;
+
+  u32 *to_next = vlib_frame_vector_args(f);
+  for (int i=0; i < buf_count; i++)
+  {
+      to_next[i] = buf_indices[i];
+  }
+
+  vlib_put_frame_to_node(vm, dm->esp4_encrypt_node->index, f);
+}
+
 static_always_inline u32
 dpdk_device_input (vlib_main_t * vm, dpdk_main_t * dm, dpdk_device_t * xd,
 		   vlib_node_runtime_t * node, u32 thread_index, u16 queue_id)
@@ -361,6 +397,42 @@ dpdk_device_input (vlib_main_t * vm, dpdk_main_t * dm, dpdk_device_t * xd,
 
   if ((xd->flags & DPDK_DEVICE_FLAG_ADMIN_UP) == 0)
     return 0;
+
+  // thread-index 
+  // 0 - main main-thread
+  // 1 - worker1 (dataplane-core0), rx-0/device-0 && rx-0/device-1 
+  // 2 - worker2(dataplane-core1), rx-1/device-0 - secure interface/ct/esp-decrypt 
+  // 3 - worker3 (dataplane-core2), rx-1/device-1 - unsecure interface/pt/esp-encrypt
+
+  // PK FIXME -- special handing rx-q 0 next node ESP-encrypt/decrypt
+
+  // rx-0/device-0/port-0 is a HW queue and polled on core0
+  // rx-0/device-1/port-1 is a HW queue and polled on core0
+  // thread-index 1, worker1
+  if (dm->esp_encrypt_pipeline && (queue_id == 0) && (thread_index == 1))
+  {
+      //vlib_buffer_t *bufs[VLIB_FRAME_SIZE], **b = bufs;
+      u32 buf_indices[VLIB_FRAME_SIZE];
+      u32 buf_count = 0;
+      dm->esp_encrypt_pipeline_deq_burst(xd->port_id, buf_indices, VLIB_FRAME_SIZE, &buf_count);
+      if (buf_count)
+      {
+          put_frame_to_esp_encrypt(vm, dm, buf_indices, buf_count); 
+      }
+  }
+
+  // rx-1/device0/port0 is soft queue and polled on dataplane-core1, thread_index2, worker2
+  if (dm->esp_decrypt_pipeline && (queue_id == 1) && (thread_index == 2))
+  {
+      //vlib_buffer_t *bufs[VLIB_FRAME_SIZE], **b = bufs;
+      u32 buf_indices[VLIB_FRAME_SIZE];
+      u32 buf_count = 0;
+      dm->esp_decrypt_pipeline_deq_burst(xd->port_id, buf_indices, VLIB_FRAME_SIZE, &buf_count);
+      if (buf_count)
+      {
+          put_frame_to_esp_decrypt(vm, dm, buf_indices, buf_count); 
+      }
+  }
 
   /* get up to DPDK_RX_BURST_SZ buffers from PMD */
   while (n_rx_packets < DPDK_RX_BURST_SZ)

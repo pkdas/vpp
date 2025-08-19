@@ -45,6 +45,9 @@
 
 #include <dpdk/device/dpdk_priv.h>
 
+#include <vlib/unix/plugin.h>
+#include <assert.h>
+
 dpdk_main_t dpdk_main;
 dpdk_config_main_t dpdk_config_main;
 
@@ -1701,6 +1704,18 @@ dpdk_init (vlib_main_t * vm)
 
   dm->log_default = vlib_log_register_class ("dpdk", 0);
   dm->log_cryptodev = vlib_log_register_class ("dpdk", "cryptodev");
+
+  dm->esp_encrypt_pipeline_deq_burst = vlib_get_plugin_symbol("dpdk_plugin.so", "gemu_esp_encrypt_pipeline_deq_burst");
+  dm->esp_decrypt_pipeline_deq_burst = vlib_get_plugin_symbol("dpdk_plugin.so", "gemu_esp_decrypt_pipeline_deq_burst");
+
+  dm->esp4_encrypt_node = vlib_get_node_by_name(vm, (u8 *) "esp4-encrypt");
+  dm->esp4_decrypt_node = vlib_get_node_by_name(vm, (u8 *) "esp4-decrypt");
+
+  assert(dm->esp4_encrypt_node);
+  assert(dm->esp4_decrypt_node);
+
+  dm->esp_encrypt_pipeline = 0;
+  dm->esp_decrypt_pipeline = 0;
 
   return error;
 }

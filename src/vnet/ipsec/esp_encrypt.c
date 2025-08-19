@@ -606,6 +606,22 @@ set_ip6_udp_cksum_offload (vlib_buffer_t *b, i16 l3_hdr_offset,
 }
 
 always_inline uword
+esp_encrypt_inline_x (vlib_main_t *vm, vlib_node_runtime_t *node,
+		    vlib_frame_t *frame, vnet_link_t lt, int is_tun,
+		    u16 async_next_node)
+{
+  u32 *from = vlib_frame_vector_args (frame);
+
+  // FIXME use  buffer indices  
+  // vlib_buffer_t *bufs[VLIB_FRAME_SIZE], **b = bufs;
+  // vlib_get_buffers (vm, from, b, n_left);
+
+  // NOTE - assuming all esp packets to/from the same interface
+  ipsec_main.esp_encrypt_pipeline_enq_burst(vnet_buffer(vlib_get_buffer(vm, from[0]))->sw_if_index[VLIB_RX], from, frame->n_vectors);
+  return frame->n_vectors;
+}
+
+always_inline uword
 esp_encrypt_inline (vlib_main_t *vm, vlib_node_runtime_t *node,
 		    vlib_frame_t *frame, vnet_link_t lt, int is_tun,
 		    u16 async_next_node)
@@ -1253,8 +1269,15 @@ VLIB_NODE_FN (esp4_encrypt_node) (vlib_main_t * vm,
 				  vlib_node_runtime_t * node,
 				  vlib_frame_t * from_frame)
 {
-  return esp_encrypt_inline (vm, node, from_frame, VNET_LINK_IP4, 0,
+  if (ipsec_main.esp_encrypt_pipeline)
+  {
+    return esp_encrypt_inline (vm, node, from_frame, VNET_LINK_IP4, 0,
 			     esp_encrypt_async_next.esp4_post_next);
+  } else
+  {
+    return esp_encrypt_inline_x (vm, node, from_frame, VNET_LINK_IP4, 0,
+			     esp_encrypt_async_next.esp4_post_next);
+  }
 }
 
 VLIB_REGISTER_NODE (esp4_encrypt_node) = {

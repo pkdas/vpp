@@ -28,6 +28,9 @@
 #include <vnet/ipsec/ipsec_itf.h>
 #include <vnet/ipsec/ipsec_spd_fp_lookup.h>
 
+#include <vlib/unix/plugin.h>
+#include <assert.h>
+
 /* Flow cache is sized for 1 million flows with a load factor of .25.
  */
 #define IPSEC4_OUT_SPD_DEFAULT_HASH_NUM_BUCKETS (1 << 22)
@@ -495,6 +498,15 @@ ipsec_init (vlib_main_t * vm)
   im->fp_spd_ipv6_in_is_enabled = 0;
 
   im->fp_lookup_hash_buckets = IPSEC_FP_HASH_LOOKUP_HASH_BUCKETS;
+
+  im->esp_encrypt_pipeline_enq_burst = vlib_get_plugin_symbol("dpdk_plugin.so", "gemu_esp_encrypt_pipeline_enq_burst"); 
+  im->esp_decrypt_pipeline_enq_burst = vlib_get_plugin_symbol("dpdk_plugin.so", "gemu_esp_decrypt_pipeline_enq_burst"); 
+
+  assert(im->esp_encrypt_pipeline_enq_burst);
+  assert(im->esp_decrypt_pipeline_enq_burst);
+
+  im->esp_encrypt_pipeline = 0;
+  im->esp_decrypt_pipeline = 0;
 
   return 0;
 }

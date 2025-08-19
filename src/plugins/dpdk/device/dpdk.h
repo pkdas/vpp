@@ -351,6 +351,16 @@ typedef struct
   /* logging */
   vlib_log_class_t log_default;
   vlib_log_class_t log_cryptodev;
+
+  // PK FIXME
+  int esp_encrypt_pipeline;
+  int esp_decrypt_pipeline;
+
+  vlib_node_t *esp4_encrypt_node;
+  vlib_node_t *esp4_decrypt_node;
+
+  void (*esp_encrypt_pipeline_deq_burst)(u32 port_id, u32 *buf_indices, u32 buf_count, u32 *rxed_count);
+  void (*esp_decrypt_pipeline_deq_burst)(u32 port_id, u32 *buf_indices, u32 buf_count, u32 *rxed_count);
 } dpdk_main_t;
 
 extern dpdk_main_t dpdk_main;

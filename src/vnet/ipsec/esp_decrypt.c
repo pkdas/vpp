@@ -1079,6 +1079,21 @@ esp_decrypt_post_crypto (vlib_main_t *vm, vlib_node_runtime_t *node,
 }
 
 always_inline uword
+esp_decrypt_inline_x (vlib_main_t *vm, vlib_node_runtime_t *node,
+                    vlib_frame_t *frame, vnet_link_t lt, int is_tun,
+                    u16 async_next_node)
+{
+  u32 *from = vlib_frame_vector_args (frame);
+
+  // FIXME use  buffer indices
+  // vlib_buffer_t *bufs[VLIB_FRAME_SIZE], **b = bufs;
+  // vlib_get_buffers (vm, from, b, n_left);
+
+  ipsec_main.esp_decrypt_pipeline_enq_burst(vnet_buffer(vlib_get_buffer(vm, from[0]))->sw_if_index[VLIB_RX], from, frame->n_vectors);
+  return frame->n_vectors;
+}
+
+always_inline uword
 esp_decrypt_inline (vlib_main_t *vm, vlib_node_runtime_t *node,
 		    vlib_frame_t *from_frame, int is_ip6, int is_tun,
 		    u16 async_next_node)
@@ -1488,8 +1503,15 @@ VLIB_NODE_FN (esp4_decrypt_node) (vlib_main_t * vm,
 				  vlib_node_runtime_t * node,
 				  vlib_frame_t * from_frame)
 {
-  return esp_decrypt_inline (vm, node, from_frame, 0, 0,
+  if (!ipsec_main.esp_decrypt_pipeline)
+  {
+    return esp_decrypt_inline (vm, node, from_frame, 0, 0,
 			     esp_decrypt_async_next.esp4_post_next);
+  } else
+  {
+     return esp_decrypt_inline_x(vm, node, from_frame, 0, 0,
+			     esp_decrypt_async_next.esp4_post_next);
+  }
 }
 
 VLIB_NODE_FN (esp4_decrypt_post_node) (vlib_main_t * vm,

@@ -13,7 +13,7 @@
 
 DPDK_PKTMBUF_HEADROOM        ?= 128
 DPDK_USE_LIBBSD              ?= n
-DPDK_DEBUG                   ?= y
+DPDK_DEBUG                   ?= n
 DPDK_TAP_PMD                 ?= n
 DPDK_FAILSAFE_PMD            ?= n
 DPDK_MACHINE                 ?= default
@@ -53,11 +53,11 @@ DPDK_MLX5_PMD                ?= $(DPDK_MLX_DEFAULT)
 DPDK_MLX5_COMMON_PMD         ?= $(DPDK_MLX_DEFAULT)
 # Debug or release
 
-#DPDK_BUILD_TYPE:=release
-DPDK_BUILD_TYPE:=debug
-ifeq ($(DPDK_DEBUG), y)
-DPDK_BUILD_TYPE:=debug
-endif
+DPDK_BUILD_TYPE:=release
+#DPDK_BUILD_TYPE:=debug
+#ifeq ($(DPDK_DEBUG), y)
+#DPDK_BUILD_TYPE:=debug
+#endif
 
 DPDK_MAX_LCORES_FLAG :=
 ifneq ($(DPDK_MAX_LCORES),)

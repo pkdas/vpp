@@ -263,6 +263,12 @@ typedef struct
 
   u8 async_mode;
   u16 msg_id_base;
+
+  //
+  int esp_encrypt_pipeline;
+  int esp_decrypt_pipeline;
+  void (*esp_encrypt_pipeline_enq_burst)(u32 if_index, u32 *buf_indices, u32 count);
+  void (*esp_decrypt_pipeline_enq_burst)(u32 if_index, u32 *buf_indices, u32 count);
 } ipsec_main_t;
 
 typedef enum ipsec_format_flags_t_
